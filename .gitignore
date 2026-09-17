@@ -1,0 +1,58 @@
+# ==========================================
+# Entornos de desarrollo / IDEs
+# ==========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ==========================================
+# Python / Bytecode / Caché
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# ==========================================
+# Apache Spark & Hadoop temporales / logs
+# ==========================================
+derby.log
+metastore_db/
+spark-warehouse/
+*.log
+
+# ==========================================
+# Datos locales y binarios voluminosos
+# (Nota: la guía exige incluir los .csv en el zip de entrega, por eso no se ignora data/)
+# ==========================================
+*.tmp
+*.bak
+
+# ==========================================
+# Archivos específicos de Sistema Operativo
+# ==========================================
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
