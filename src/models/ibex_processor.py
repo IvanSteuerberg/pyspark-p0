@@ -1,4 +1,4 @@
-from pyspark.sql.functions import col, to_date
+from pyspark.sql.functions import col, to_date, avg, max, min, year
 from pyspark.sql.types import DoubleType, StructType, StructField, DateType
 
 class IbexProcessor:
@@ -78,3 +78,49 @@ class IbexProcessor:
             .csv(self.csv_path)
         )
         return self.df
+
+    def drop_nulls_and_duplicates(self):
+        initial_rows = self.df.count()
+        self.df = self.df.dropna(how="all")
+        self.df = self.df.dropDuplicates()
+        final_rows = self.df.count()
+        return initial_rows, final_rows
+
+    def get_num_companies(self):
+        num_companies = len(self.df.columns) - 1  # Subtract 1 for the date column
+        return num_companies
+
+    def get_date_range_and_num_days(self):
+        start_date = self.df.agg({"Fecha": "min"}).collect()[0][0]
+        end_date = self.df.agg({"Fecha": "max"}).collect()[0][0]
+        num_days = self.df.select("Fecha").distinct().count()
+        return start_date, end_date, num_days
+
+    def rename_fecha_to_dia(self):
+        self.df = self.df.withColumnRenamed("Fecha", "Dia")
+        return self.df
+
+    def calculate_annual_stats(self):
+        # Extract the year from the "Dia" column
+        self.df = self.df.withColumn("Year", year(col("Dia")))
+
+        # Calculate annual statistics for each company
+        annual_stats = (
+            self.df.groupBy("Year")
+            .agg(
+                *[
+                    avg(col(company)).alias(f"{company}_mean") for company in self.df.columns if company != "Dia" and company != "Year"
+                ],
+                *[
+                    max(col(company)).alias(f"{company}_max") for company in self.df.columns if company != "Dia" and company != "Year"
+                ],
+                *[
+                    min(col(company)).alias(f"{company}_min") for company in self.df.columns if company != "Dia" and company != "Year"
+                ]
+            )
+        )
+        return annual_stats
+
+    def add_deficiency_notice_column(self):
+        print("Adding 'Deficiency Notice UNI' column...")
+        self.df = self.df.withColumn("Deficiency Notice UNI", col("UNI") < 1)
