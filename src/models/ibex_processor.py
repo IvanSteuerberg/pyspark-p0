@@ -202,4 +202,9 @@ class IbexProcessor:
         
         return self.df
 
-            
+    def get_clean_data_without_new_columns(self):
+        """Devuelve los datos tratados (Dia + 35 empresas) sin las columnas anadidas en los ejercicios 3, 5 y 6."""
+        cols = [c for c in self.df.columns if not c.endswith("Cuartil") 
+                and not c.endswith("CambioSignificativo") 
+                and c not in {"Year", "Deficiency Notice UNI", "Fecha"}]
+        return self.df.select(cols).orderBy("Dia")

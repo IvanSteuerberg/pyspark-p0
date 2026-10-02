@@ -1,6 +1,7 @@
 import os
 from pyspark.sql.functions import col, to_date
 from config import spark_session
+from config.db_connector import DBConnector
 from models.ibex_processor import IbexProcessor
 
 
@@ -87,3 +88,19 @@ print("En un día normal como el de la fila 15 ninguna acción se mueve tanto. L
 print("Fuentes: \n"
     "https://www.gothamcityresearch.com/ , https://elpais.com/economia/2024-01-09/grifols-se-hunde-en-bolsa-tras-un-informe-de-la-firma-de-analisis-que-destapo-el-fraude-de-gowex.html",
     "https://www.elconfidencial.com/empresas/2024-04-25/sabadell-resultados-beneficio-margenes_3872416/")
+
+# Conexión y almacenamiento en Base de Datos SQL (JDBC)
+print("\n--- Almacenamiento en Base de Datos (JDBC) ---")
+db = DBConnector(spark)
+
+# Acción 1: Tratar de almacenar los datos completos leídos del CSV como tabla Datos2024
+print("1. Almacenando datos completos leídos del CSV en la tabla 'Datos2024'...")
+raw_df = spark.read.option("header", True).option("sep", ";").csv(csv_path)
+db.write_table(raw_df, "Datos2024", mode="overwrite")
+print("Tabla 'Datos2024' creada con los datos originales del CSV.")
+
+# Acción 2: Almacenar los datos tratados anteriormente (sin nuevas columnas) en la tabla Datos2024
+print("2. Almacenando datos tratados (sin nuevas columnas) en la tabla 'Datos2024'...")
+df_tratado = processor.get_clean_data_without_new_columns()
+db.write_table(df_tratado, "Datos2024", mode="overwrite")
+print("Tabla 'Datos2024' sobrescrita con los datos tratados correctamente.")
