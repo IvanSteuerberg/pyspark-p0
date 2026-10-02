@@ -53,3 +53,9 @@ print("Annual statistics:")
 annual_stats.show(1, vertical=True)
 processor.add_deficiency_notice_column()
 processor.df.show(100)  # Show 100 rows of the DataFrame
+
+# Ex. 3b:
+print("Ex. 3b:")
+print("Son empresas del IBEX35. Los nulos corresponden a empresas que salieron a bolsa a mediados de año. " \
+"\nNo afectan a los cálculos de media, máximo y mínimo porque se excluyeron anteriormente." \
+"\nFuente: datosmacro.com, https://datosmacro.expansion.com/bolsa/espana")
