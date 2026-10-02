@@ -1,4 +1,4 @@
-from pyspark.sql.functions import col, to_date, avg, max, min, year
+from pyspark.sql.functions import col, first, last, to_date, avg, max, min, year, when
 from pyspark.sql.types import DoubleType, StructType, StructField, DateType
 
 class IbexProcessor:
@@ -124,3 +124,64 @@ class IbexProcessor:
     def add_deficiency_notice_column(self):
         print("Adding 'Deficiency Notice UNI' column...")
         self.df = self.df.withColumn("Deficiency Notice UNI", col("UNI") < 1)
+
+    def calculate_annual_variation(self):
+
+        # Order the df
+        df_sorted = self.df.orderBy("Dia")
+
+        # Filter
+        excluded_cols = {"Dia", "Year", "Deficiency Notice UNI", "Fecha"}
+        companies = [c for c in self.df.columns if c not in excluded_cols]
+
+        # Agg
+        agg_exprs = []
+        for c in companies:
+            agg_exprs.append(first(col(c), ignorenulls=True).alias(f"{c}_inicial"))
+            agg_exprs.append(last(col(c), ignorenulls=True).alias(f"{c}_final"))
+
+        min_max_values = df_sorted.agg(*agg_exprs).collect()[0].asDict()
+
+        data = []
+        for c in companies:
+            initial = min_max_values.get(f"{c}_inicial")
+            final = min_max_values.get(f"{c}_final")
+
+            if initial is not None and final is not None and initial != 0:
+                variation = ((final - initial) / initial) * 100
+
+                if variation >= 15:
+                    clasification = "Subida Fuerte"
+                elif variation > 1:
+                    clasification = "Subida"
+                elif variation >= -1:
+                    clasification = "Neutra"
+                elif variation > -15:
+                    clasification = "Bajada"
+                else:
+                    clasification = "Bajada Fuerte"
+
+                data.append((c, round(initial, 4), round(final, 4), round(variation, 2), clasification))
+
+        schema = ["Empresa", "Valor_Inicial", "Valor_Final", "Variacion_Porcentual", "Clasificacion"]
+        return self.spark.createDataFrame(data, schema=schema)
+    
+    def add_quartile_columns(self):
+        
+        excluded_cols = {"Dia", "Year", "Deficiency Notice UNI", "Fecha"}
+        companies = [c for c in self.df.columns if c not in excluded_cols]
+        
+        for c in companies:
+            q = self.df.approxQuantile(c, [0.25, 0.5, 0.75], 0.01)
+            q1, q2, q3 = q[0], q[1], q[2]
+            
+            col_name = f"{c}Cuartil"
+            self.df = self.df.withColumn(
+                col_name, 
+                when(col(c).isNull(), None)
+                .when(col(c) <= q1, "q1")
+                .when(col(c) <= q2, "q2")
+                .when(col(c) <= q3, "q3")
+                .otherwise("q4")
+            )
+        return self.df
