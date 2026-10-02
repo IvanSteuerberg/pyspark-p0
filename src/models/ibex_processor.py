@@ -1,5 +1,6 @@
-from pyspark.sql.functions import col, first, last, to_date, avg, max, min, year, when
+from pyspark.sql.functions import col, first, last, to_date, avg, max, min, year, when, lag, abs, round as spark_round
 from pyspark.sql.types import DoubleType, StructType, StructField, DateType
+from pyspark.sql.window import Window
 
 class IbexProcessor:
     def __init__(self, spark_session, csv_path):
@@ -185,3 +186,20 @@ class IbexProcessor:
                 .otherwise("q4")
             )
         return self.df
+
+    def add_significant_change_columns(self):
+        wind = Window.orderBy("Dia")
+
+        excluded_cols = {"Dia", "Year", "Deficiency Notice UNI", "Fecha"}
+        companies = [c for c in self.df.columns if c not in excluded_cols and not c.endswith("Cuartil")]
+
+        for c in companies:
+            prev_price = lag(col(c), 1).over(wind)
+            var_pct = ((col(c) - prev_price) / prev_price) * 100
+            col_name = f"{c}CambioSignificativo"
+            self.df = self.df.withColumn(col_name, when(abs(var_pct) > 8, spark_round(var_pct, 2).cast("string"))
+            .otherwise("-"))
+        
+        return self.df
+
+            

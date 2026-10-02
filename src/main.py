@@ -74,7 +74,16 @@ print("Columnas de AENA y BBVA con sus cuartiles:")
 processor.df.select("Dia", "AENA", "AENACuartil", 
 "BBVA", "BBVACuartil").orderBy("Dia").show(processor.df.count(), truncate=False)
 
-# Ej6
+# Ej6 (Uso de IA: Gemini como asistente de búsqueda bibliográfica para localizar las noticias de Grifols y Sabadell)
 print("Ej6")
+processor.add_significant_change_columns()
 
+print("Fila 15 del DataFrame:")
+fila_15 = processor.df.orderBy("Dia").head(15)[14]
+spark.createDataFrame([fila_15], schema=processor.df.schema).show(vertical=True)
 
+print("En un día normal como el de la fila 15 ninguna acción se mueve tanto. Los cambios de más del 8% en el año se deben a noticias imprevistas, ",\
+"principalmente la caída de Grifols en enero por el informe de Gotham y la subida de Sabadell en abril tras presentar resultados récord.")
+print("Fuentes: \n"
+    "https://www.gothamcityresearch.com/ , https://elpais.com/economia/2024-01-09/grifols-se-hunde-en-bolsa-tras-un-informe-de-la-firma-de-analisis-que-destapo-el-fraude-de-gowex.html",
+    "https://www.elconfidencial.com/empresas/2024-04-25/sabadell-resultados-beneficio-margenes_3872416/")
